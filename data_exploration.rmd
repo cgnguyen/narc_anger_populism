@@ -1,0 +1,385 @@
+---
+title: "Narcissistic rivalry, anger, and radical right populist party support "
+output:
+  html_document:
+  df_print: paged
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+editor_options: 
+  chunk_output_type: console
+---
+# Abstract
+
+
+
+
+In the last two decades, radical right populist parties (RRP) have successfully established themselves in many Western and Central European countries. As a consequence, researchers have become increasingly interested in the drivers for supporting such parties. Initially, many studies focused on short-term explanations why voters might vote for such a party, e.g. economic, cultural, and status threat perceptions or preferences for specific policies. More recently, a growing number of studies has focused on the general psychological factors underpinning this support. These studies explore stable personality traits such as the five factor model or narcissism, and show that a considerable proportion of the population is, at least in principle, receptive to the appeal of RRPs. 
+
+But while the focus on the psychological underpinnings of RRP support allows us to understand its relationship with radical right populist vote choice in a more thorough way, it also raises a more general question of political psychology: What are the mechanisms through which stable personality traits are translated into political perceptions, attitudes, and behaviors? While some personality traits are in general connected to RRP support, not all individuals with these traits support these parties. Conversely, not all supporters of RRPs have the same personality structure. 
+
+In this paper, we explore this question by focusing on the relationship between narcissistic rivalry, anger, and RRP support. Combining affective intelligence theory and the Narcissistic Admiration and Rivalry Concept, we argue narcissists, especially those with high levels of narcissistic rivalry, are more likely to express anger when their social status is threatened, which in turn increases their affinity for the populist radical-right Alternative for Germany (AfD).
+
+We explore this relationship by using high-quality panel data from a mixed-mode access panel representative of the German population (GESIS panel) .
+
+# Introduction and Setup
+
+## The question 
+
+We want to investigate how narcissistic rivalry, anger, and support for radical right populist parties are connected. We want to focus especially on the role that threats to social status play in activating anger in grandiose narcissists.  
+
+
+##Setup
+
+Load necessary packages. 
+
+```{r setup package}
+  library(needs)
+  needs(tidyverse)
+  needs(haven)
+  needs(car)
+  needs(nnet)
+  needs(texreg)
+  needs(lavaan)
+  needs(mediation)
+  needs(tidyselect)
+  needs(Rmisc)
+```
+
+## Load and Clean Data
+
+We are using the GESIS panel, that began in 2013. This data is not freely available and has to be requested from GESIS, which is why it is not included in this document. 
+
+```{r read data, cache=TRUE}
+  DATA<-read_dta("ZA5664_a1_v33-0-0.dta")
+  DATA$id<-DATA$z000001a
+```
+
+## Cleaning the Data
+
+Always fun - first data has to be cleaned. This is especially fun in this panel survey. This section also covers how these variables are measured. 
+
+### Indep Var 1: Narcissism 
+
+One key variable is grandiose narcissism. We differentiate between two dimensions of this overarching concept: narcissistic rivalry and narcissistic admiration. 
+
+This data was collected in three waves of the survey, once in 2015, once in 2017, and once in 2019. Note that this panel collects more than one wave per year. 
+
+In the data, each sub aspect was measured through three questions, coded on a scale of 1 (does not apply at all) to 6 (applies fully). 
+
+For narcissistic rivalry
+
+ I am irritated when others steal the spotlight 
+ I want my opponents to fail
+ Most people are losers.
+
+For narcissistic admiration
+
+I earned being viewed as a great personality.
+I barely endure it if someone else is at the center of attention.
+I gain a lot of strength from knowing that I am a very special person.
+
+
+Unless otherwise indicated, I calculate the mean score of each variable to get a value of narcissism. 
+
+```{r setup narc}
+    #2015
+      DATA$narc_rival_1_2015<-car::recode(DATA$dabf098a,"-999:0=NA")
+      DATA$narc_rival_2_2015<-car::recode(DATA$dabf103a,"-999:0=NA")
+      DATA$narc_rival_3_2015<-car::recode(DATA$dabf111a,"-999:0=NA")
+      
+      
+      DATA$narc_admir_1_2015<-car::recode(DATA$dabf102a,"-999:0=NA")
+      DATA$narc_admir_2_2015<-car::recode(DATA$dabf106a,"-999:0=NA")
+      DATA$narc_admir_3_2015<-car::recode(DATA$dabf109a,"-999:0=NA")
+      
+      
+      DATA$narc_rival_2015<-rowMeans(DATA[,c("narc_rival_1_2015","narc_rival_2_2015","narc_rival_3_2015")], na.rm=T)
+      DATA$narc_admir_2015<-rowMeans(DATA[,c("narc_admir_1_2015","narc_admir_2_2015","narc_admir_3_2015")], na.rm=T)
+      
+    #2017
+      DATA$narc_rival_1_2017<-car::recode(DATA$fabf048a,"-999:0=NA")
+      DATA$narc_rival_2_2017<-car::recode(DATA$fabf053a,"-999:0=NA")
+      DATA$narc_rival_3_2017<-car::recode(DATA$fabf061a,"-999:0=NA")
+      
+      DATA$narc_admir_1_2017<-car::recode(DATA$fabf052a,"-999:0=NA")
+      DATA$narc_admir_2_2017<-car::recode(DATA$fabf056a,"-999:0=NA")
+      DATA$narc_admir_3_2017<-car::recode(DATA$fabf059a,"-999:0=NA")
+      
+      DATA$narc_rival_2017<-rowMeans(DATA[,c("narc_rival_1_2017","narc_rival_2_2017","narc_rival_3_2017")], na.rm=T)
+      DATA$narc_admir_2017<-rowMeans(DATA[,c("narc_admir_1_2017","narc_admir_2_2017","narc_admir_3_2017")], na.rm=T)
+      
+    
+    #2019
+      DATA$narc_rival_1_2019<-car::recode(DATA$gabf048a,"-999:0=NA")
+      DATA$narc_rival_2_2019<-car::recode(DATA$gabf053a,"-999:0=NA")
+      DATA$narc_rival_3_2019<-car::recode(DATA$gabf061a,"-999:0=NA")
+      
+      DATA$narc_admir_1_2019<-car::recode(DATA$gabf052a,"-999:0=NA")
+      DATA$narc_admir_2_2019<-car::recode(DATA$gabf056a,"-999:0=NA")
+      DATA$narc_admir_3_2019<-car::recode(DATA$gabf059a,"-999:0=NA")
+      
+      DATA$narc_rival_2019<-rowMeans(DATA[,c("narc_rival_1_2019","narc_rival_2_2019","narc_rival_3_2019")], na.rm=T)
+      DATA$narc_admir_2019<-rowMeans(DATA[,c("narc_admir_1_2019","narc_admir_2_2019","narc_admir_3_2019")], na.rm=T)
+```
+
+## Indep Var 2: Anger / Anxiety
+
+For emotions variable, I focus on generalized anger and anxiety. The question asks respondents how frequently they have felt angry/anxious in the last 4 weeks. Unfortunately, in the initial waves of the survey, this question was asked in two different ways, once ranging from 0 (very rarely) to 10 (very often), and once from 1(very rarely) to 5( very often). I have resealed all answers to range between 0 and 1 and combined them. 
+
+A second problem is coverage that differs from the narcissism variable. While Narcissism is measured once a year in 2015, 2017 and 2019, emotions are measured much more frequently within each year, but only until the beginning of 2016. 
+
+Note that there is a PANAS question about current feelings in Wave bb and a current emotion item in waves fd, fe, ff However, they are not comparable across waves. 
+
+```{r setup emotions}
+      DATA$anger_2014_c_1<-car::recode(DATA$ccaw138a,"-111:-1=NA")/10 
+      DATA$anger_2014_c_2<-(car::recode(DATA$ccaw157a,"-111:-1=NA")-1)/4
+      DATA$anger_2014_c<-coalesce(DATA$anger_2014_c_1,DATA$anger_2014_c_2)
+      
+      DATA$anger_2014_d_1<-car::recode(DATA$cdaw080a,"-111:-1=NA")/10 
+      DATA$anger_2014_d_2<-(car::recode(DATA$cdaw096a,"-111:-1=NA")-1)/4
+      DATA$anger_2014_d<-coalesce(DATA$anger_2014_d_1,DATA$anger_2014_d_2)
+      
+      DATA$anger_2014_e_1<-car::recode(DATA$ceaw147a,"-111:-1=NA")/10 
+      DATA$anger_2014_e_2<-(car::recode(DATA$ceaw163a,"-111:-1=NA")-1)/4
+      DATA$anger_2014_e<-coalesce(DATA$anger_2014_e_1,DATA$anger_2014_e_2)
+      
+      DATA$anger_2014_f_1<-car::recode(DATA$cfaw129a,"-111:-1=NA")/10 
+      DATA$anger_2014_f_2<-(car::recode(DATA$cfaw145a,"-111:-1=NA")-1)/4
+      DATA$anger_2014_f<-coalesce(DATA$anger_2014_f_1,DATA$anger_2014_f_2)
+      
+      DATA$anger_2014<-rowMeans(DATA[,c("anger_2014_c","anger_2014_d","anger_2014_e","anger_2014_f")], na.rm=T)
+
+      #2015
+      DATA$anger_2015_a_1<-car::recode(DATA$daaw122a,"-111:-1=NA")/10 
+      DATA$anger_2015_a_2<-(car::recode(DATA$daaw138a,"-111:-1=NA")-1)/4
+      DATA$anger_2015_a<-coalesce(DATA$anger_2015_a_1,DATA$anger_2015_a_2)
+
+      DATA$anger_2015_b<-car::recode(DATA$dbaw234a,"-111:-1=NA")/10 
+      DATA$anger_2015_c<-car::recode(DATA$dcaw169a,"-111:-1=NA")/10 
+      DATA$anger_2015_d<-car::recode(DATA$ddaw164a,"-111:-1=NA")/10 
+      DATA$anger_2015_e<-car::recode(DATA$deaw254a,"-111:-1=NA")/10 
+      DATA$anger_2015_f<-car::recode(DATA$dfaw101a,"-111:-1=NA")/10 
+      
+      DATA$anger_2015<-rowMeans(DATA[,c("anger_2015_a","anger_2015_b","anger_2015_c",
+                                        "anger_2015_d","anger_2015_e","anger_2015_f")], na.rm=T)
+
+      #2016
+      DATA$anger_2016_a<-car::recode(DATA$eaaw131a,"-111:-1=NA")/10 
+      DATA$anger_2016_b<-car::recode(DATA$ebaw230a,"-111:-1=NA")/10 
+      
+      DATA$anger_2016<-rowMeans(DATA[,c("anger_2016_a","anger_2016_b")], na.rm=T)
+      
+      
+  ####*Emotions- Fear####
+       #2014
+      DATA$fear_2014_c_1<-car::recode(DATA$ccaw139a,"-111:-1=NA")/10 
+      DATA$fear_2014_c_2<-(car::recode(DATA$ccaw158a,"-111:-1=NA")-1)/4
+      DATA$fear_2014_c<-coalesce(DATA$fear_2014_c_1,DATA$fear_2014_c_2)
+      
+      DATA$fear_2014_d_1<-car::recode(DATA$cdaw081a,"-111:-1=NA")/10 
+      DATA$fear_2014_d_2<-(car::recode(DATA$cdaw097a,"-111:-1=NA")-1)/4
+      DATA$fear_2014_d<-coalesce(DATA$fear_2014_d_1,DATA$fear_2014_d_2)
+      
+      DATA$fear_2014_e_1<-car::recode(DATA$ceaw148a,"-111:-1=NA")/10 
+      DATA$fear_2014_e_2<-(car::recode(DATA$ceaw164a,"-111:-1=NA")-1)/4
+      DATA$fear_2014_e<-coalesce(DATA$fear_2014_e_1,DATA$fear_2014_e_2)
+      
+      DATA$fear_2014_f_1<-car::recode(DATA$cfaw130a,"-111:-1=NA")/10 
+      DATA$fear_2014_f_2<-(car::recode(DATA$cfaw146a,"-111:-1=NA")-1)/4
+      DATA$fear_2014_f<-coalesce(DATA$fear_2014_f_1,DATA$fear_2014_f_2)
+      
+      DATA$fear_2014<-rowMeans(DATA[,c("fear_2014_c","fear_2014_d","fear_2014_e","fear_2014_f")], na.rm=T)
+
+      #2015
+      DATA$fear_2015_a_1<-car::recode(DATA$daaw123a,"-111:-1=NA")/10 
+      DATA$fear_2015_a_2<-(car::recode(DATA$daaw139a,"-111:-1=NA")-1)/4
+      DATA$fear_2015_a<-coalesce(DATA$fear_2015_a_1,DATA$fear_2015_a_2)
+
+      DATA$fear_2015_b<-car::recode(DATA$dbaw235a,"-111:-1=NA")/10 
+      DATA$fear_2015_c<-car::recode(DATA$dcaw170a,"-111:-1=NA")/10 
+      DATA$fear_2015_d<-car::recode(DATA$ddaw171a,"-111:-1=NA")/10 
+      DATA$fear_2015_e<-car::recode(DATA$deaw255a,"-111:-1=NA")/10 
+      DATA$fear_2015_f<-car::recode(DATA$dfaw102a,"-111:-1=NA")/10 
+      
+      DATA$fear_2015<-rowMeans(DATA[,c("fear_2015_a","fear_2015_b","fear_2015_c",
+                                        "fear_2015_d","fear_2015_e","fear_2015_f")], na.rm=T)
+
+      #2016
+      DATA$fear_2016_a<-car::recode(DATA$eaaw132a,"-111:-1=NA")/10 
+      DATA$fear_2016_b<-car::recode(DATA$ebaw231a,"-111:-1=NA")/10 
+      
+      DATA$fear_2016<-rowMeans(DATA[,c("fear_2016_a","fear_2016_b")], na.rm=T)
+```
+
+### Dep Variable: Party support
+
+A relatively wide measure of support is through vote intention. The so called "Sonntagsfrage" asks respondents which party they would vote for if there was an election on Sunday. Relatively naive recode that assumes that voting for the AfD counts as a 1, voting for any other party or being uncertain is coded as 0.  Ambiguous answers, people who cannot vote etc. are excluded from analysis. 
+
+
+```{r}
+  DATA$party_2014<-as_factor(DATA$cczc043a)
+  DATA$party_2015<-as_factor(DATA$dczc043a)
+  DATA$party_2016<-as_factor(DATA$edzc151a)
+  DATA$party_2017<-as_factor(DATA$fcby099a)
+  DATA$party_2019<-as_factor(DATA$gaby105a)
+      
+  #Naive Recode - nonresponse etc is na - all parties are other including don't know, Afd is 1 
+      DATA$afd_2014<-DATA$party_2014
+      levels(DATA$afd_2014)[c(1:5,13)]<-NA
+      levels(DATA$afd_2014)[c(1:5,7:8)]<-0
+      levels(DATA$afd_2014)[2]<-1
+
+      DATA$afd_2015<-DATA$party_2015
+      levels(DATA$afd_2015)[c(1:6,14)]<-NA
+      levels(DATA$afd_2015)[c(1:5,7:8)]<-0
+      levels(DATA$afd_2015)[2]<-1
+      
+      #A lot more missing here
+      DATA$afd_2016<-DATA$party_2016
+      levels(DATA$afd_2016)[c(1:7,15)]<-NA
+      levels(DATA$afd_2016)[c(1:5,7:8)]<-0
+      levels(DATA$afd_2016)[2]<-1
+      
+      DATA$afd_2017<-DATA$party_2017
+      levels(DATA$afd_2017)[c(1:5,13)]<-NA
+      levels(DATA$afd_2017)[c(1:5,7:8)]<-0
+      levels(DATA$afd_2017)[2]<-1
+      
+      DATA$afd_2019<-DATA$party_2019
+      levels(DATA$afd_2019)[c(1:5,13)]<-NA
+      levels(DATA$afd_2019)[c(1:5,7:8)]<-0
+      levels(DATA$afd_2019)[2]<-1      
+
+```
+
+A more narrow understanding of party affiliation/support is actual party identification. A benefit here is that it is more gradual, since we can also look at relative strength, which is useful if we want to use RICLMP models (that don't work with binary outcome variables). Problem is that in the first waves (cc and dc), the AfD is not listed as a party and the " other party" category variable is not coded correctly. The Afd is only available as a party from wave ee onward, so there is no good overlap with the emotion variables
+
+
+
+## Demographics etc. 
+
+We need to find a decent measure of threat to social status. Ideally something "objective" , since I am concerned that there are some desirability bias in answers for narcissists (they may not want to admit that things are going badly for them). Possibilities include income , income satisfaction , work status (unemployed vs. employed vs. part time etc. )
+
+
+```{r}
+  ####Age and gender####
+      DATA$gender<-droplevels(as_factor(DATA$a11d054a))
+      DATA$age<-recode(DATA$a11d172a, "-99:0 = NA")
+```
+
+
+# Descriptive and Data Exploration 
+
+## Are narcissists more angry in general? 
+
+One important question is, if narcissists are just more generally angry?We treat everyone who has a value of 2.333 (top 25%) or higher on the narcissism scores to be narcissists. 
+
+
+```{r}
+    DATA%>%
+      mutate(narc_rival_binary= as.factor(case_when(narc_rival_2015 <=2.333 ~ 'No',
+                                          narc_rival_2015 >2.3 ~'Yes' )))%>%
+      dplyr::select(z000001a,narc_rival_binary,anger_2014,anger_2015,anger_2016,)%>%
+      pivot_longer(cols=contains("anger")) %>%
+      group_by(z000001a)%>%
+      dplyr::summarize(mean_anger=mean(value,na.rm=T),
+                narc=unique(narc_rival_binary))%>%
+      summarySE(.,measurevar="mean_anger",groupvar = "narc", na.rm=T)%>%
+      filter(!is.na(narc))%>%
+      ggplot(aes(x=narc, y=mean_anger, ymin=mean_anger-1.96*se,ymax=mean_anger+1.96*se))+
+      geom_col()+
+      geom_errorbar(width=0.4)+
+      theme_bw()+
+      labs(title ="Average Anger by rival narcissism")
+      
+
+  DATA%>%
+      mutate(narc_admir_binary= as.factor(case_when(narc_admir_2015 <=2.333 ~ 'No',
+                                          narc_admir_2015 >2.3 ~'Yes' )))%>%
+      dplyr::select(id,narc_admir_binary,anger_2014,anger_2015,anger_2016,)%>%
+      pivot_longer(cols=contains("anger")) %>%
+      group_by(id)%>%
+      dplyr::summarize(mean_anger=mean(value,na.rm=T),
+                narc=unique(narc_admir_binary))%>%
+      summarySE(.,measurevar="mean_anger",groupvar = "narc", na.rm=T)%>%
+      filter(!is.na(narc))%>%
+      ggplot(aes(x=narc, y=mean_anger, ymin=mean_anger-1.96*se,ymax=mean_anger+1.96*se))+
+      geom_col()+
+      geom_errorbar(width=0.4)+
+      theme_bw()+
+      labs(title ="Average Anger by narcissistic admiration")
+```
+
+Narcissists in general seem to be much more angry than the average respondent. An alternative look at this shows, that high anger can happen for all respondents, but low anger is limited to non-narcissistic individuals. 
+
+
+```{r}
+  DATA%>%
+      ggplot(aes(x=narc_rival_2015, y=anger_2015))+
+      geom_jitter()+
+      geom_smooth()+
+      theme_bw()+
+      labs(title="Narcissist Rivalry and Anger in 2015")
+
+  DATA%>%
+      ggplot(aes(x=narc_admir_2015, y=anger_2015))+
+      geom_jitter()+
+      geom_smooth()+
+      theme_bw()+
+      labs(title="Narcissist Admiration and Anger in 2015")
+
+
+```
+
+## Stability of Anger over time 
+
+Another general model could explore if narcissists became more angry after 2015, when the refuge situation picked up. To do this, lets trace out average anger over time for narcissistic and non-narcissistic  
+
+
+```{r}
+  DATA_temp<-zap_labels(DATA)
+  DATA_temp %>% 
+      mutate(narc_rival_binary= as.factor(case_when(narc_rival_2015 <=2.333 ~ 'No',
+                                          narc_rival_2015 >2.3 ~'Yes' )))%>%
+      dplyr::select(-matches("anger_201[1-9]_[a-z]_[1-2]")) %>%
+      dplyr::select(id,matches("anger_201[1-9]_[a-z]"),narc_rival_binary)%>%
+      pivot_longer(cols=contains("anger"), names_to="wave", names_prefix = "anger_")%>%
+      group_by(narc_rival_binary,wave)%>%
+      dplyr::summarize(anger=mean(value,na.rm=T))%>%
+      filter(!is.na(narc_rival_binary))%>%
+    ggplot(aes(x=wave, y=anger, color=narc_rival_binary))+
+      geom_jitter()+
+      geom_smooth()+
+      theme(axis.text.x = element_text(angle = 90))  
+```
+
+
+Looking at the Anger gap more specifically 
+
+```{r}
+  DATA_temp<-zap_labels(DATA)
+  DATA_temp %>% 
+      mutate(narc_rival_binary= as.factor(case_when(narc_rival_2015 <=2.333 ~ 'No',
+                                          narc_rival_2015 >2.3 ~'Yes' )))%>%
+      dplyr::select(-matches("anger_201[1-9]_[a-z]_[1-2]")) %>%
+      dplyr::select(id,matches("anger_201[1-9]_[a-z]"),narc_rival_binary)%>%
+      pivot_longer(cols=contains("anger"), names_to="wave", names_prefix = "anger_")%>%
+      group_by(narc_rival_binary,wave)%>%
+      filter(!is.na(narc_rival_binary))%>%
+      dplyr::summarize(anger=mean(value,na.rm=T))%>%
+      pivot_wider(names_from = narc_rival_binary, values_from= anger) %>%
+      group_by(wave)%>%
+      dplyr::summarize(anger_gap=Yes-No) %>%
+    ggplot(aes(x=wave, y=anger_gap))+
+      geom_jitter()+
+      geom_smooth()+
+      theme(axis.text.x = element_text(angle = 90)) +
+      theme_bw()
+```
+
+
+
+
